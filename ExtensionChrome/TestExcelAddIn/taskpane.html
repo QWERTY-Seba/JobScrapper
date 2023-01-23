@@ -32,6 +32,13 @@
             return context.sync();
         });
     }
+
+    Office.initialize = function () {
+    Office.context.document.registerCommand("pasteClipboard", pasteClipboard, {icon: "paste", title: "Paste Clipboard"});
+    Office.context.document.addHandlerAsync(Office.EventType.DocumentEvents.OnAccessKey, pasteClipboard);
+    };
+
+
 </script>
 
 </html>
