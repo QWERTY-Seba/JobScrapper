@@ -8,27 +8,30 @@
 
 <body>
     <p>This add-in will set cell A1 to the value 'Hello world!'.</p>
-    <button id="pasteClipboard">pasteClipboard</button>
+    <button id="helloButton">Say hello</button>
 
+    <!-- The following image URL tracks diagnostic data for this sample add-in. Please remove the image tag if you reuse this sample in your own code project. -->
+    <img src="https://pnptelemetry.azurewebsites.net/pnp-officeaddins/samples/excel-add-in-hello-world-run" />
 </body>
 
 <script>
-Office.onReady((info) => {});
-Office.initialize = function () {
-    Office.context.document.registerCommand("pasteClipboard", pasteClipboard, {icon: "paste", title: "Paste Clipboard"});
-    Office.context.document.addHandlerAsync(Office.EventType.DocumentEvents.OnAccessKey, pasteClipboard);
-};
-function pasteClipboard() {
-    navigator.clipboard.readText().then(clipText => {
-        Excel.run(function (ctx) {
-            var sheet = ctx.workbook.worksheets.getActiveWorksheet();
-            sheet.getRange("A1").values = clipText;
-            return ctx.sync();
-        }).catch(errorHandler);
+    Office.onReady((info) => {
+        // Check that we loaded into Excel
+        if (info.host === Office.HostType.Excel) {
+            document.getElementById("helloButton").onclick = sayHello;
+        }
     });
-}
 
+    function sayHello() {
+        Excel.run(context => {
 
+            // Insert text 'Hello world!' into cell A1.
+            context.workbook.worksheets.getActiveWorksheet().getRange("A1").values = [['Hello world!']];
+
+            // sync the context to run the previous API call, and return.
+            return context.sync();
+        });
+    }
 </script>
 
 </html>
