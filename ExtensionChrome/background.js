@@ -1,9 +1,13 @@
+import * as util from "./util.js"
+import * as util_html from "./util_html.js"
+import * as dao_almacenamiento from "./dao_almacenamiento.js"
+
 var mb = 0
 
 var request_Almacenar = []
 var ventanas_attached = []
 var dias_expiracion = 30
-var palabras_baneadas = ['cloud architect', 'back-end', 'front-end', 'android', 
+var cargos_baneados = ['cloud architect', 'back-end', 'front-end', 'android', 
 						'node[.]js', '[.]net', 'django', 'react[.]js', 'vue[.]js',
 						'front end', 'back end', 'devops', 'backend', 'frontend',
 						'intern', 'sr', 'senior', 'jefe', 'usd', 'oracle', 'lider', 
@@ -51,6 +55,8 @@ agregar, buscar ofertas en la bd cuando se busca fuera de linkedin
 mover las funciones de utilidad a un archivo nuevo
 
 agregar opcion para agregar o quitar botones en el action
+
+compatibildad en extraccion de experiencia para los empleos que estan en ingles
 */
 
 
@@ -66,56 +72,15 @@ Apiux Tecnologia
 
 
 
-function regTest(fila, Rex) {
-	var respuesta = fila.primaryDescription.text.match(new RegExp(Rex, 'giu'))
-	if (respuesta != null) {
-		return respuesta[0]
-	}
-	return ""
-}
-
-function getSafe(fn, defaultVal) {
-	try {
-		return fn();
-	} catch (e) {
-		return defaultVal;
-	}
-}
-
-function objectoEstaVacio(objeto) {
-	return Object.getOwnPropertyNames(objeto).length == 0
-
-}
 
 
-function obtenerIdOferta() {
-	return reg.exec(fila.trackingUrn)[0]
-}
-/*
-	Enviar la fecha en formato epoch
-*/
-function estaExpirada(fecha_publicacion) {
-	var someDate = new Date();
-	var result = someDate.setDate(someDate.getDate() + dias_expiracion);
-	return result > fecha_publicacion
-}
 
-function quitarAcentos(texto) {
-	return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-}
 
-function pintarBaneado(id_oferta, tabId) {
-	chrome.scripting.executeScript({
-		target : {tabId : Debuggee.tabId} ,
-		func :  claseTestSeba.insertarAñosExpDiv,
-		args : [id_oferta]
-	})
-}
 
 let regx = new class {
 	//Las palabras se podria pasar a un config o al storage para que sea dinamico y modificable desde js
 
-	expresion = palabras_baneadas.join('|')
+	expresion = cargos_baneados.join('|')
 	Ofertasregex = new RegExp(this.expresion, 'gium')
 
 	AciertosMatch(palabra, InputRegex) {
@@ -125,9 +90,11 @@ let regx = new class {
 		}
 	}
 
-	cargoBaneado(titulo) {
-		titulo = quitarAcentos(titulo)
-		let respuesta = this.Ofertasregex.exec(titulo)
+	cargo_baneado(titulo) {
+		titulo = util.quitarAcentos(titulo)
+		let temp_regex = new RegExp(this.expresion, 'gium')
+	
+		let respuesta = temp_regex.exec(titulo)
 		console.log('Probando regex titulo con', titulo, respuesta)
 		//if respuesta == null, devolver el titulo convertido en unicode o algo asi
 
@@ -204,20 +171,7 @@ function adjuntar_debugger(tabid){
     })        
 }
 
-function descartar_oferta(id_oferta){
-	chrome.storage.local.get(id_oferta, (oferta) => {
-		if (objectoEstaVacio(oferta)) {
-			console.log('La oferta a descartar no esta almacenada', id_oferta)
-			return;
-		}
-		
-		oferta[id_oferta].descartada = true
-		oferta[id_oferta].tipo_descarte.manual = true
-		
-		chrome.storage.local.set(oferta)
-		console.log('oferta descartada', message.id_oferta)
-	})
-}
+
 
 async function Linkedin(respuesta, tabId) {
 	var Lista_oferta = {}
@@ -229,24 +183,23 @@ async function Linkedin(respuesta, tabId) {
 		let id_oferta = 0
 		let id_compania = 0
 
-		//Quitar o comentar los case sin codigo y agregar un else break
 		switch (fila.$type) {
 			case 'com.linkedin.voyager.dash.jobs.JobPosting':
-				//Cambiar a match
 				id_oferta = reg.exec(fila.trackingUrn)[0]
 
-				//Buscar id en la bd de ofertas
-				//Si existe, adjuntar la cantidad de solicitudes actuales
-				//Si no existe, continuar con el proceso
 				let saltar_oferta = false;
-
 				await chrome.storage.local.get(id_oferta).then((oferta) => {
-
-					if (!objectoEstaVacio(oferta)) {
+					if (!util.objectoEstaVacio(oferta)) {
 						console.log('oferta ya existente, saltando ', id_oferta)
 						saltar_oferta = true;
 						if (oferta[id_oferta].descartada) {
-							pintarBaneado(id_oferta, tabId)
+							chrome.scripting.executeScript({
+								target : {tabId : tabId} ,
+								func :  util_html.descartar_oferta,
+								args : [id_oferta]
+							})
+							
+							
 						}
 					}
 				})
@@ -269,26 +222,19 @@ print('\n'.join(exrex.generate('(?:Al menos|mínimo|Desde|Experiencia (?:de|de a
 (?:Al menos|mínimo|Desde|Experiencia de|Experiencia de al menos|Experiencia mínima de) \d año[s]? (?:de experiencia|de experiencia en el cargo|en cargos similares)
 (?:(\d)|(\d) [aoy] \d|(\d)-\d) a[ññ]{1,2}o[s]?(?:(?:(?: de)? experiencia)?)
 */
-
-
 				let match;
 				let HTML_Lista_Experiencia = "";
-				
 				while ((match = regex.exec(fila.description.text)) !== null) {
 					HTML_Lista_Experiencia += `<li class='job-card-list__insight' >${match[0]}</li>`
 				}
-
 				chrome.scripting.executeScript({
 					target : {tabId : tabId} ,
-					func :  claseTestSeba.insertarAñosExpDiv,
+					func :  util_html.insertarAñosExpDiv,
 					args : [id_oferta , HTML_Lista_Experiencia]
 				})
-
 				if (saltar_oferta) {
 					break;
 				}
-
-
 
 				var oferta_temp = Object.assign({}, modelo_oferta)
 				oferta_temp.tipo_descarte = {
@@ -300,17 +246,18 @@ print('\n'.join(exrex.generate('(?:Al menos|mínimo|Desde|Experiencia (?:de|de a
 					manual: false,
 					empresa: false
 				}
-
-
-				if (regx.cargo_Baneado(fila.title)) {
+				if (regx.cargo_baneado(fila.title)) {
 					oferta_temp.tipo_descarte.cargo = true
 					oferta_temp.descartada = true
-					pintarBaneado(id_oferta, tabId)
+					chrome.scripting.executeScript({
+						target : {tabId : tabId} ,
+						func :  util_html.descartar_oferta,
+						args : [id_oferta]
+					})
 
 				}
-
 				oferta_temp.id_empleo = id_oferta
-				oferta_temp.descripcion_empleo = quitarAcentos(fila.description.text)
+				oferta_temp.descripcion_empleo = util.quitarAcentos(fila.description.text)
 				oferta_temp.pagina_recoleccion = "Linkedin"
 				oferta_temp.cargo = fila.title
 				oferta_temp.fecha_recoleccion_registro = tiempo_llamado
@@ -318,7 +265,6 @@ print('\n'.join(exrex.generate('(?:Al menos|mínimo|Desde|Experiencia (?:de|de a
 				break;
 
 			case 'com.linkedin.voyager.dash.jobs.JobPostingCard':
-				
 				id_oferta = reg.exec(fila.entityUrn)[0]
 
 				if (Lista_oferta[id_oferta] == null) {
@@ -357,9 +303,9 @@ print('\n'.join(exrex.generate('(?:Al menos|mínimo|Desde|Experiencia (?:de|de a
 						}
 					}
 
-					Lista_oferta[id_oferta].link_empresa = getSafe(() => fila.logo.actionTarget, '')
-					Lista_oferta[id_oferta].info_empresa = getSafe(() => fila.jobInsightsV2ResolutionResults[1].insightViewModel.text.text, '')
-					Lista_oferta[id_oferta].tipo_jornada = getSafe(() => fila.jobInsightsV2ResolutionResults[0].insightViewModel.text.text, '')
+					Lista_oferta[id_oferta].link_empresa = util.getSafe(() => fila.logo.actionTarget, '')
+					Lista_oferta[id_oferta].info_empresa = util.getSafe(() => fila.jobInsightsV2ResolutionResults[1].insightViewModel.text.text, '')
+					Lista_oferta[id_oferta].tipo_jornada = util.getSafe(() => fila.jobInsightsV2ResolutionResults[0].insightViewModel.text.text, '')
 					Lista_oferta[id_oferta].id_compania = reg.exec(fila.logo.attributes[0].detailData["*companyLogo"])[0]
 				} catch (error) {
 					console.error(error, fila)
@@ -376,7 +322,7 @@ print('\n'.join(exrex.generate('(?:Al menos|mínimo|Desde|Experiencia (?:de|de a
 				break;
 			case 'com.linkedin.voyager.dash.organization.Company':
 				let id_imagen = fila.logoResolutionResult.vectorImage.digitalmediaAsset.match(/urn:li:digitalmediaAsset:(.*)/ui)[1]
-				let obj_imagen = imagenes_almacenar[id_imagen]
+				// let obj_imagen = imagenes_almacenar[id_imagen]
 
 
 				/*
@@ -413,7 +359,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 			adjuntar_debugger(sender.tab.id)
 			break;
 		case "DESCARTAR_OFERTA":
-			descartar_oferta(message.id_oferta)
+			dao_almacenamiento.descartar_oferta_almacenada(message.id_oferta)
 			break;
 
 	}
@@ -459,7 +405,7 @@ chrome.debugger.onEvent.addListener((Debuggee, message, params) => {
 				
 				chrome.scripting.executeScript({
 					target : {tabId : Debuggee.tabId} ,
-					func :  AgregarBotonesDescarte})
+					func :  util_html.AgregarBotonesDescarte})
 				})
         });
   

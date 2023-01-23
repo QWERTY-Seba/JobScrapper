@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
+           xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
+           xsi:type="TaskPaneApp">
+
+  <Id>1</Id>
+  <Version>1.0.0.0</Version>
+  <ProviderName>Your Company Name</ProviderName>
+  <DefaultLocale>en-US</DefaultLocale>
+
+  <DisplayName DefaultValue="Paste from Clipboard"></DisplayName>
+  <Description DefaultValue="Paste the content of the clipboard into the active worksheet"></Description>
+  <IconUrl DefaultValue="https://localhost:3000/assets/icon-32.png"></IconUrl>
+
+  <SupportUrl DefaultValue="https://yourcompany.com/support"></SupportUrl>
+  <AppDomains>
+    <AppDomain>yourcompany.com</AppDomain>
+  </AppDomains>
+  <Hosts>
+    <Host Name="Workbook" />
+  </Hosts>
+  <DefaultSettings>
+    <SourceLocation DefaultValue="https://localhost:3000/taskpane.html" />
+  </DefaultSettings>
+
+  <Permissions>ReadWriteDocument</Permissions>
+  <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="VersionOverridesV1_0">
+    <Hosts>
+      <Host xsi:type="Workbook">
+        <AllFormFactors>
+          <ExtensionPoint xsi:type="PrimaryCommandSurface">
+            <OfficeTab id="TabDefault">
+              <Group id="cmdGroup" />
+            </OfficeTab>
+          </ExtensionPoint>
+          <ExtensionPoint xsi:type="ContextMenu">
+            <Group id="ContextMenuGroup">
+              <Control id="PasteClipboard" />
+            </Group>
+          </ExtensionPoint>
+        </AllFormFactors>
+      </Host>
+    </Hosts>
+    <Resources>
+      <bt:Images>
+        <bt:Image id="pasteClipboardIcon" DefaultValue="https://localhost:3000/assets/icon-32.png" />
+      </bt:Images>
+      <bt:Urls>
+        <bt:Url id="pasteClipboardFunction" DefaultValue="https://localhost:3000/taskpane.html" />
+      </bt:Urls>
+      <bt:ShortStrings>
+        <bt:String id="pasteClipboardLabel" DefaultValue="Paste from Clipboard" />
+<bt:String id="pasteClipboardTitle" DefaultValue="Paste from Clipboard" />
+<bt:String id="pasteClipboardDescription" DefaultValue="Paste the content of the clipboard into the active worksheet" />
+</bt:ShortStrings>
+</Resources>
+<VersionOverrides>
+<Control xsi:type="Button" id="pasteClipboard" accessKey="Ctrl+Shift+V">
+<Label resid="pasteClipboardLabel" />
+<Supertip>
+<Title resid="pasteClipboardTitle" />
+<Description resid="pasteClipboardDescription" />
+</Supertip>
+<Icon>
+<bt:Image size="16" resid="pasteClipboardIcon" />
+<bt:Image size="32" resid="pasteClipboardIcon" />
+<bt:Image size="80" resid="pasteClipboardIcon" />
+</Icon>
+<Action xsi:type="ExecuteFunction">
+<FunctionName>pasteClipboard</FunctionName>
+</Action>
+</Control>
+</VersionOverrides>
+</VersionOverrides>
+</OfficeApp>
+
+
